@@ -15,68 +15,6 @@ st.set_page_config(
     page_icon="🧬"
 )
 
-# ---------------------- CUSTOM CSS ----------------------
-st.markdown("""
-<style>
-/* Dark background & light text */
-body, .stApp, .block-container {
-    background-color: #121212;
-    color: #ffffff;
-}
-
-/* Gradient Title */
-h1 {
-    text-align: center;
-    font-weight: 900 !important;
-    background: -webkit-linear-gradient(45deg, #00bfff, #00ffcc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    padding-bottom: 10px;
-}
-
-/* Subheaders */
-h2, h3 {
-    color: #00ffff;
-}
-
-/* Card styling */
-.card {
-    background-color: #2a2a2a;
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0px 4px 8px rgba(0,0,0,0.3);
-    margin-top: 20px;
-}
-
-/* Footer */
-.footer {
-    text-align: center;
-    margin-top: 40px;
-    font-size: 14px;
-    color: #aaaaaa;
-}
-
-/* Buttons */
-.stButton>button {
-    background-color: #00bfff;
-    color: #000000;
-    font-weight: bold;
-    border-radius: 8px;
-    padding: 8px 24px;
-}
-.stButton>button:hover {
-    background-color: #00ffff;
-    color: #000000;
-}
-
-/* File uploader */
-.stFileUploader>div>div>input {
-    color: #000000 !important;
-    background-color: #ffffff !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
 # ---------------------- HEADING ----------------------
 st.title("AI Microscopy System")
 st.markdown("""
@@ -97,17 +35,10 @@ if model is None:
 # ---------------------- SIDEBAR: ABOUT ----------------------
 with st.sidebar.expander("ℹ️ About This Project"):
     st.markdown("""
-    ### About This Project
-    
-    **AI Microscopy System** is a cutting-edge platform for **real-time analysis of blood smear images**. 
+    **AI Microscopy System** is a platform for **real-time analysis of blood smear images**. 
     Using **YOLOv8s FP16**, it detects potential **antimicrobial resistance (AMR) indicators** quickly and accurately.
 
-    #### Key Features:
-    - **Fast and Accurate Detection:** YOLOv8 optimized for FP16 for high-speed inference.
-    - **Interactive Visualization:** Bounding boxes colored by confidence, with hover tooltips and summary tables.
-    - **Flexible Input:** Upload custom images or choose from sample repository images.
-    - **Dark Mode UI:** Optimized for both phones and laptops for professional appearance.
-    - **Research & Demo Utility:** Designed for academic research, diagnostics demonstration, and AI-assisted microscopy.
+    This system is designed for **research, demonstration, and academic purposes**, providing an interactive and intuitive interface for microscopy-based AI detection.
     """)
 
 # ---------------------- FILE INPUTS ----------------------
@@ -192,7 +123,7 @@ if st.button("🔍 Run Detection"):
             # Detection summary in card
             if detections:
                 df = pd.DataFrame(detections).sort_values(by="Confidence", ascending=False)
-                st.markdown('<div class="card">', unsafe_allow_html=True)
+                st.markdown('<div style="background-color:#f0f0f0;padding:15px;border-radius:12px;margin-top:20px;">', unsafe_allow_html=True)
                 st.markdown("### Detection Summary")
                 st.dataframe(df, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
@@ -201,7 +132,7 @@ if st.button("🔍 Run Detection"):
 
 # ---------------------- FOOTER ----------------------
 st.markdown("""
-<div class="footer">
+<div style="text-align:center;margin-top:40px;font-size:14px;color:#555555;">
     System by <strong>Simon</strong> — contact: <a href="mailto:allinmer57@gmail.com">allinmer57@gmail.com</a>
 </div>
 """, unsafe_allow_html=True)
