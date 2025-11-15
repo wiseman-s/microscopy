@@ -8,7 +8,7 @@ import pandas as pd
 
 # ---------------------- PAGE SETTINGS ----------------------
 st.set_page_config(
-    page_title="AI Microscopy AMR Detector",
+    page_title="AI Microscopy System",
     layout="centered",
 )
 
@@ -22,10 +22,9 @@ h1 { text-align: center; font-weight: 800 !important; color: #2e6edf; padding-bo
 """, unsafe_allow_html=True)
 
 # ---------------------- HEADING ----------------------
-st.title("AI Microscopy System for Detecting Antimicrobial Resistance (AMR) in Blood Smears")
+st.title("AI Microscopy System")
 st.markdown("""
-This system uses a **YOLOv8 deep learning model** to detect AMR indicators directly from microscope blood smear images.
-Upload an image or pick a sample to begin inference.
+Upload a microscope image or select a sample from the repository to detect antimicrobial resistance indicators.
 """)
 
 # ---------------------- LOAD MODEL ----------------------
