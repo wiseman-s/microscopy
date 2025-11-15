@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 import os
 import pandas as pd
+import plotly.graph_objects as go
 
 # ---------------------- PAGE SETTINGS ----------------------
 st.set_page_config(
@@ -38,16 +39,7 @@ h2, h3 {
     color: #00ffff;
 }
 
-/* Sample image box */
-.sample-box {
-    background-color: #1f1f1f;
-    padding: 15px;
-    border-radius: 12px;
-    border: 1px solid #333;
-    margin-bottom: 20px;
-}
-
-/* Detection summary card */
+/* Card styling */
 .card {
     background-color: #2a2a2a;
     padding: 15px;
@@ -79,8 +71,8 @@ h2, h3 {
 
 /* File uploader */
 .stFileUploader>div>div>input {
-    color: #000000;
-    background-color: #ffffff;
+    color: #000000 !important;
+    background-color: #ffffff !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -88,8 +80,8 @@ h2, h3 {
 # ---------------------- HEADING ----------------------
 st.title("AI Microscopy System")
 st.markdown("""
-Upload a microscope image or select a sample from the repository to detect antimicrobial resistance indicators.
-The system provides real-time detection with confidence scores, bounding boxes, and a summary table for analysis.
+Upload a blood smear image or select a sample from the repository to detect antimicrobial resistance indicators.
+The system provides real-time detection with confidence scores, bounding boxes, and an interactive summary table.
 """)
 
 # ---------------------- LOAD MODEL ----------------------
@@ -103,34 +95,29 @@ if model is None:
     st.stop()
 
 # ---------------------- SIDEBAR: ABOUT ----------------------
-with st.sidebar.expander("ℹ️ About this Project"):
+with st.sidebar.expander("ℹ️ About This Project"):
     st.markdown("""
-    ### About AI Microscopy System
+    ### About This Project
     
-    **AI Microscopy System** is a cutting-edge platform designed for **real-time analysis of blood smear images**. 
-    Using **YOLOv8s FP16**, it detects potential indicators of **antimicrobial resistance (AMR)** with high precision.
+    **AI Microscopy System** is a cutting-edge platform for **real-time analysis of blood smear images**. 
+    Using **YOLOv8s FP16**, it detects potential **antimicrobial resistance (AMR) indicators** quickly and accurately.
 
     #### Key Features:
-    - **Fast and Accurate Detection:** Real-time inference using YOLOv8 optimized for FP16.
-    - **Professional Visualization:** Bounding boxes colored based on confidence, with interactive summary tables.
-    - **Flexible Input:** Accepts custom uploads or sample images stored in the repository.
-    - **Dark Mode UI:** Polished dark theme optimized for phones and laptops.
-    - **Research Utility:** Designed for academic research, diagnostics demonstration, and AI-assisted microscopy studies.
-    
-    *Accelerating the workflow of AMR research through intuitive AI-assisted microscopy.*
+    - **Fast and Accurate Detection:** YOLOv8 optimized for FP16 for high-speed inference.
+    - **Interactive Visualization:** Bounding boxes colored by confidence, with hover tooltips and summary tables.
+    - **Flexible Input:** Upload custom images or choose from sample repository images.
+    - **Dark Mode UI:** Optimized for both phones and laptops for professional appearance.
+    - **Research & Demo Utility:** Designed for academic research, diagnostics demonstration, and AI-assisted microscopy.
     """)
 
-# ---------------------- FILE INPUT ----------------------
-st.subheader("Input Image")
-uploaded_file = st.file_uploader("Upload microscope image (.jpg, .png)", type=["jpg", "png"])
+# ---------------------- FILE INPUTS ----------------------
+st.subheader("Upload Sample Image")
+uploaded_file = st.file_uploader("Upload blood smear image (.jpg, .png)", type=["jpg", "png"])
 
-# ---------------------- SAMPLE IMAGES FROM ROOT ----------------------
-st.markdown("Or select a sample image:")
-
+st.subheader("Or select a sample from the repository")
 sample_images = [f for f in os.listdir(".") 
                  if f.lower().endswith(".png") and f[0].isdigit()]
-
-selected_sample = st.selectbox("Sample Images in Repo Root:", [""] + sample_images)
+selected_sample = st.selectbox("Upload Sample Image:", [""] + sample_images)
 
 image = None
 if uploaded_file:
@@ -138,11 +125,10 @@ if uploaded_file:
 elif selected_sample:
     image = Image.open(selected_sample).convert("RGB")
 
-# Display image
 if image is not None:
     st.image(image, caption="Selected Image", use_container_width=True)
 
-# ---------------------- BUTTON: RUN DETECTION ----------------------
+# ---------------------- RUN DETECTION ----------------------
 if st.button("🔍 Run Detection"):
     if image is None:
         st.warning("Please upload or select an image first.")
@@ -157,38 +143,53 @@ if st.button("🔍 Run Detection"):
                 st.error(f"Error during inference: {e}")
                 st.stop()
 
-            # Process detection results
-            img_out = img_cv.copy()
+            # Prepare Plotly figure for hover
+            height, width, _ = img_np.shape
+            fig = go.Figure()
+            fig.add_trace(go.Image(z=img_np))
+
             detections = []
 
             for r in results:
                 for box in r.boxes:
-                    xyxy = box.xyxy[0].cpu().numpy().astype(int)
+                    xyxy = box.xyxy[0].cpu().numpy()
                     conf = float(box.conf[0].cpu().numpy())
                     cls = int(box.cls[0].cpu().numpy())
                     label = model.names[cls] if model.names else str(cls)
 
                     detections.append({"Class": label, "Confidence": conf})
 
-                    # Color based on confidence (green → yellow → cyan)
+                    # Bounding box color based on confidence
                     green_intensity = int(conf * 255)
-                    color = (0, green_intensity, 255 - green_intensity)
+                    color_hex = f'rgb(0,{green_intensity},{255-green_intensity})'
 
-                    # Draw bounding box
-                    cv2.rectangle(img_out, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), color, 2)
+                    # Add rectangle to Plotly
+                    fig.add_shape(
+                        type="rect",
+                        x0=xyxy[0], y0=xyxy[1], x1=xyxy[2], y1=xyxy[3],
+                        line=dict(color=color_hex, width=3)
+                    )
+                    # Add hover text at top-left corner
+                    fig.add_trace(go.Scatter(
+                        x=[xyxy[0]], y=[xyxy[1]],
+                        text=[f"{label}: {conf:.2f}"],
+                        mode="markers+text",
+                        marker=dict(size=1, color=color_hex),
+                        textposition="top left",
+                        showlegend=False
+                    ))
 
-                    # Label text
-                    txt = f"{label} {conf:.2f}"
-                    (w, h), _ = cv2.getTextSize(txt, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
-                    cv2.rectangle(img_out, (xyxy[0], xyxy[1]-20), (xyxy[0]+w, xyxy[1]), color, -1)
-                    cv2.putText(img_out, txt, (xyxy[0], xyxy[1]-5),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,0), 1)
+            fig.update_layout(
+                xaxis=dict(visible=False, range=[0, width]),
+                yaxis=dict(visible=False, range=[height, 0]),
+                margin=dict(l=0, r=0, t=0, b=0),
+                autosize=True,
+                plot_bgcolor="rgba(0,0,0,0)",
+            )
 
-            # Display result
-            img_out_rgb = cv2.cvtColor(img_out, cv2.COLOR_BGR2RGB)
-            st.image(img_out_rgb, caption="Detection Result", use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True)
 
-            # Detection table in card
+            # Detection summary in card
             if detections:
                 df = pd.DataFrame(detections).sort_values(by="Confidence", ascending=False)
                 st.markdown('<div class="card">', unsafe_allow_html=True)
