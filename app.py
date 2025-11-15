@@ -33,11 +33,9 @@ if model is None:
     st.stop()
 
 # ---------------------- SIDEBAR: ABOUT ----------------------
+# ---------------------- SIDEBAR: ABOUT ----------------------
 with st.sidebar.expander("About This Project"):
     st.markdown("""
-    **AI Microscopy System** is a platform for **real-time analysis of blood smear images**. 
-    Using **YOLOv8s FP16**, it detects potential **antimicrobial resistance (AMR) indicators** quickly and accurately.
-
     This system is designed for **research, demonstration, and academic purposes**, providing an interactive and intuitive interface for microscopy-based AI detection.
     """)
 
