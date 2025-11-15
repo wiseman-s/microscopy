@@ -18,9 +18,9 @@ st.set_page_config(
 # ---------------------- HEADING ----------------------
 st.title("AI Microscopy System")
 st.markdown("""
-Upload a blood smear image or select a sample from the repository to detect antimicrobial resistance indicators.
 The system provides real-time detection with confidence scores, bounding boxes, and an interactive summary table.
 """)
+
 
 # ---------------------- LOAD MODEL ----------------------
 @st.cache_resource
