@@ -10,14 +10,59 @@ import pandas as pd
 st.set_page_config(
     page_title="AI Microscopy System",
     layout="centered",
+    initial_sidebar_state="expanded",
+    page_icon="🧬"
 )
 
 # ---------------------- CUSTOM CSS ----------------------
 st.markdown("""
 <style>
-h1 { text-align: center; font-weight: 800 !important; color: #2e6edf; padding-bottom: 10px; }
-.block-container { padding-top: 2rem; }
-.footer { text-align: center; margin-top: 40px; font-size: 14px; color: #6c757d; }
+/* Dark background & light text */
+body, .stApp, .block-container {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+/* Gradient Title */
+h1 {
+    text-align: center;
+    font-weight: 900 !important;
+    background: -webkit-linear-gradient(45deg, #00bfff, #00ffcc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    padding-bottom: 10px;
+}
+
+/* Subheaders */
+h2, h3 {
+    color: #00ffff;
+}
+
+/* Sample image box */
+.sample-box {
+    background-color: #1f1f1f;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    margin-bottom: 20px;
+}
+
+/* Detection summary card */
+.card {
+    background-color: #1f1f1f;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0px 4px 8px rgba(0,0,0,0.3);
+    margin-top: 20px;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 14px;
+    color: #aaaaaa;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -25,6 +70,7 @@ h1 { text-align: center; font-weight: 800 !important; color: #2e6edf; padding-bo
 st.title("AI Microscopy System")
 st.markdown("""
 Upload a microscope image or select a sample from the repository to detect antimicrobial resistance indicators.
+The system provides real-time detection with confidence scores, bounding boxes, and a summary table for analysis.
 """)
 
 # ---------------------- LOAD MODEL ----------------------
@@ -37,13 +83,22 @@ model = load_model()
 if model is None:
     st.stop()
 
-# ---------------------- SIDEBAR ----------------------
-with st.sidebar.expander("ℹ️ About the Project"):
+# ---------------------- SIDEBAR: ABOUT ----------------------
+with st.sidebar.expander("ℹ️ About this Project"):
     st.markdown("""
-    - **Domain:** AI-assisted microscopy  
-    - **Target:** Detect AMR indicators  
-    - **Model:** YOLOv8s FP16  
-    - **Format:** Web-based inference system  
+    ### About AI Microscopy System
+    
+    **AI Microscopy System** is a cutting-edge platform designed for **real-time analysis of blood smear images**. 
+    Using **YOLOv8s FP16**, it detects potential indicators of **antimicrobial resistance (AMR)** with high precision.
+
+    #### Key Features:
+    - **Fast and Accurate Detection:** Real-time inference using YOLOv8 optimized for FP16.
+    - **Professional Visualization:** Bounding boxes colored based on confidence, with interactive summary tables.
+    - **Flexible Input:** Accepts custom uploads or sample images stored in the repository.
+    - **Dark Mode UI:** Polished dark theme for professional appearance.
+    - **Research Utility:** Designed for academic research, diagnostics demonstration, and AI-assisted microscopy studies.
+    
+    *Accelerating the workflow of AMR research through intuitive AI-assisted microscopy.*
     """)
 
 # ---------------------- FILE INPUT ----------------------
@@ -73,49 +128,56 @@ if st.button("🔍 Run Detection"):
     if image is None:
         st.warning("Please upload or select an image first.")
     else:
-        img_np = np.array(image)
-        img_cv = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+        with st.spinner("Running detection..."):
+            img_np = np.array(image)
+            img_cv = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
 
-        try:
-            results = model(img_cv)
-        except Exception as e:
-            st.error(f"Error during inference: {e}")
-            st.stop()
+            try:
+                results = model(img_cv)
+            except Exception as e:
+                st.error(f"Error during inference: {e}")
+                st.stop()
 
-        # Process detection results
-        img_out = img_cv.copy()
-        detections = []
+            # Process detection results
+            img_out = img_cv.copy()
+            detections = []
 
-        for r in results:
-            for box in r.boxes:
-                xyxy = box.xyxy[0].cpu().numpy().astype(int)
-                conf = float(box.conf[0].cpu().numpy())
-                cls = int(box.cls[0].cpu().numpy())
-                label = model.names[cls] if model.names else str(cls)
+            for r in results:
+                for box in r.boxes:
+                    xyxy = box.xyxy[0].cpu().numpy().astype(int)
+                    conf = float(box.conf[0].cpu().numpy())
+                    cls = int(box.cls[0].cpu().numpy())
+                    label = model.names[cls] if model.names else str(cls)
 
-                detections.append({"Class": label, "Confidence": conf})
+                    detections.append({"Class": label, "Confidence": conf})
 
-                # Draw bounding box
-                cv2.rectangle(img_out, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), (0, 255, 0), 2)
+                    # Color based on confidence
+                    green_intensity = int(conf * 255)
+                    color = (0, green_intensity, 255 - green_intensity)
 
-                # Label text
-                txt = f"{label} {conf:.2f}"
-                (w, h), _ = cv2.getTextSize(txt, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
-                cv2.rectangle(img_out, (xyxy[0], xyxy[1]-20), (xyxy[0]+w, xyxy[1]), (0, 255, 0), -1)
-                cv2.putText(img_out, txt, (xyxy[0], xyxy[1]-5),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,0), 1)
+                    # Draw bounding box
+                    cv2.rectangle(img_out, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), color, 2)
 
-        # Display result
-        img_out_rgb = cv2.cvtColor(img_out, cv2.COLOR_BGR2RGB)
-        st.image(img_out_rgb, caption="Detection Result", use_container_width=True)
+                    # Label text
+                    txt = f"{label} {conf:.2f}"
+                    (w, h), _ = cv2.getTextSize(txt, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
+                    cv2.rectangle(img_out, (xyxy[0], xyxy[1]-20), (xyxy[0]+w, xyxy[1]), color, -1)
+                    cv2.putText(img_out, txt, (xyxy[0], xyxy[1]-5),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,0), 1)
 
-        # Detection table
-        if detections:
-            df = pd.DataFrame(detections).sort_values(by="Confidence", ascending=False)
-            st.markdown("### Detection Summary")
-            st.dataframe(df, use_container_width=True)
-        else:
-            st.info("No AMR indicators detected.")
+            # Display result
+            img_out_rgb = cv2.cvtColor(img_out, cv2.COLOR_BGR2RGB)
+            st.image(img_out_rgb, caption="Detection Result", use_container_width=True)
+
+            # Detection table in card
+            if detections:
+                df = pd.DataFrame(detections).sort_values(by="Confidence", ascending=False)
+                st.markdown('<div class="card">', unsafe_allow_html=True)
+                st.markdown("### Detection Summary")
+                st.dataframe(df, use_container_width=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.info("No AMR indicators detected.")
 
 # ---------------------- FOOTER ----------------------
 st.markdown("""
