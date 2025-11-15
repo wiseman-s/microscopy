@@ -49,7 +49,7 @@ h2, h3 {
 
 /* Detection summary card */
 .card {
-    background-color: #1f1f1f;
+    background-color: #2a2a2a;
     padding: 15px;
     border-radius: 12px;
     box-shadow: 0px 4px 8px rgba(0,0,0,0.3);
@@ -62,6 +62,25 @@ h2, h3 {
     margin-top: 40px;
     font-size: 14px;
     color: #aaaaaa;
+}
+
+/* Buttons */
+.stButton>button {
+    background-color: #00bfff;
+    color: #000000;
+    font-weight: bold;
+    border-radius: 8px;
+    padding: 8px 24px;
+}
+.stButton>button:hover {
+    background-color: #00ffff;
+    color: #000000;
+}
+
+/* File uploader */
+.stFileUploader>div>div>input {
+    color: #000000;
+    background-color: #ffffff;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -95,7 +114,7 @@ with st.sidebar.expander("ℹ️ About this Project"):
     - **Fast and Accurate Detection:** Real-time inference using YOLOv8 optimized for FP16.
     - **Professional Visualization:** Bounding boxes colored based on confidence, with interactive summary tables.
     - **Flexible Input:** Accepts custom uploads or sample images stored in the repository.
-    - **Dark Mode UI:** Polished dark theme for professional appearance.
+    - **Dark Mode UI:** Polished dark theme optimized for phones and laptops.
     - **Research Utility:** Designed for academic research, diagnostics demonstration, and AI-assisted microscopy studies.
     
     *Accelerating the workflow of AMR research through intuitive AI-assisted microscopy.*
@@ -151,7 +170,7 @@ if st.button("🔍 Run Detection"):
 
                     detections.append({"Class": label, "Confidence": conf})
 
-                    # Color based on confidence
+                    # Color based on confidence (green → yellow → cyan)
                     green_intensity = int(conf * 255)
                     color = (0, green_intensity, 255 - green_intensity)
 
