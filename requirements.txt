@@ -1,7 +1,5 @@
 streamlit
-ultralytics
-opencv-python-headless==4.9.0.80
-pillow
+onnxruntime
+supervision
 numpy
-pandas
-plotly
+Pillow
